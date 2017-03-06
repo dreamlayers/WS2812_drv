@@ -4,6 +4,7 @@
 #include "SPI_uDMA_drv.h"
 #include "WS2812_drv.h"
 
+#include "inc/hw_types.h"
 #include "driverlib/gpio.h"
 #include "driverlib/pin_map.h"
 #include "driverlib/rom.h"

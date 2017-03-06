@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
 #include "driverlib/cpu.h"
 #include "driverlib/gpio.h"
