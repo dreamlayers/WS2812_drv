@@ -103,7 +103,11 @@ SSI1IntHandler(void)
             ROM_uDMAChannelTransferSet(UDMA_CHANNEL_SSI1TX | UDMA_PRI_SELECT,
                                                UDMA_MODE_BASIC, &ucZero,
                                                (void *)(SSI1_BASE + SSI_O_DR),
-                                               2);
+                                               25);
+            // Reset length was 2 bytes, but that didn't work with SK6812,
+            // causing colours to only be updated when the program gets
+            // paused in Code Composer Studio.
+            // Using 25, which meets SK6812 spec of 80 microseconds.
             ucPing = 1;
         }
         //
