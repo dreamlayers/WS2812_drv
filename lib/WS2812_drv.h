@@ -21,7 +21,7 @@ extern "C"
 //#define WS2812_SPI_BIT_WIDTH    8
 //#define WS2812_SPI_HIGH         0xF8
 //#define WS2812_SPI_LOW          0xE0
-#define WS2812_SPI_BIT_WIDTH    8
+#define WS2812_SPI_BIT_WIDTH    4
 #define WS2812_SPI_HIGH         0xE
 #define WS2812_SPI_LOW          0x8
 #define WS2812_SPI_BYTE_PER_CLR 3

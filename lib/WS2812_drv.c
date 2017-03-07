@@ -19,6 +19,7 @@ WStoSPI(uint8_t *pi8SPIData, uint8_t ui8Color)
 {
     int i;
 
+#if WS2812_SPI_BIT_WIDTH == 8
     //
     //8-bit implementation
     //
@@ -33,35 +34,38 @@ WStoSPI(uint8_t *pi8SPIData, uint8_t ui8Color)
             pi8SPIData[i] = WS2812_SPI_LOW;
         }
     }
-
+#elif WS2812_SPI_BIT_WIDTH == 4
     //
     //4-bit implementation
     //
-//    for(i=0;i<8;i++)
-//    {
-//        if(ui8Color & (0x80 >> i))
-//        {
-//            if(i&0x01)
-//            {
-//                pi8SPIData[i/2] |= (WS2812_SPI_HIGH << 4);
-//            }
-//            else
-//            {
-//                pi8SPIData[i/2] = WS2812_SPI_HIGH;
-//            }
-//        }
-//        else
-//        {
-//            if(i&0x01)
-//            {
-//                pi8SPIData[i/2] |= (WS2812_SPI_LOW << 4);
-//            }
-//            else
-//            {
-//                pi8SPIData[i/2] = WS2812_SPI_LOW;
-//            }
-//        }
-//    }
+    for(i=0;i<8;i++)
+    {
+        if(ui8Color & (0x80 >> i))
+        {
+            if(i&0x01)
+            {
+                pi8SPIData[i/2] |= (WS2812_SPI_HIGH << 4);
+            }
+            else
+            {
+                pi8SPIData[i/2] = WS2812_SPI_HIGH;
+            }
+        }
+        else
+        {
+            if(i&0x01)
+            {
+                pi8SPIData[i/2] |= (WS2812_SPI_LOW << 4);
+            }
+            else
+            {
+                pi8SPIData[i/2] = WS2812_SPI_LOW;
+            }
+        }
+    }
+#else
+#error Unsupported WS2812_SPI_BIT_WIDTH
+#endif
 
 }
 
