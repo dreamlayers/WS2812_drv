@@ -44,22 +44,22 @@ WStoSPI(uint8_t *pi8SPIData, uint8_t ui8Color)
         {
             if(i&0x01)
             {
-                pi8SPIData[i/2] |= (WS2812_SPI_HIGH << 4);
+                pi8SPIData[i/2] |= WS2812_SPI_HIGH;
             }
             else
             {
-                pi8SPIData[i/2] = WS2812_SPI_HIGH;
+                pi8SPIData[i/2] = (WS2812_SPI_HIGH << 4);
             }
         }
         else
         {
             if(i&0x01)
             {
-                pi8SPIData[i/2] |= (WS2812_SPI_LOW << 4);
+                pi8SPIData[i/2] |= WS2812_SPI_LOW;
             }
             else
             {
-                pi8SPIData[i/2] = WS2812_SPI_LOW;
+                pi8SPIData[i/2] = (WS2812_SPI_LOW << 4);
             }
         }
     }
