@@ -34,6 +34,50 @@ unsigned char ucControlTable[1024] __attribute__ ((aligned(1024)));
 static uint8_t *g_pui8DoneVar = NULL;
 static uint8_t *g_pui8SPIArray;
 static uint16_t g_ui16SPIArraySize;
+static uint16_t g_ui16DMASent;
+
+static void uDMASendData(void) {
+    uint16_t ui16TransferSize;
+
+    if (g_ui16DMASent == 0) {
+        //
+        // Configure the control parameters for the SSI TX.  The uDMA SSI TX
+        // channel is used to transfer a block of data from a buffer to the
+        // periph.  The data size is 8 bits.  The source address increment is
+        // 8-bit bytes since the data is coming from a uint8_t buffer.  The
+        // destination increment is none since the data is to be written to
+        // the SSI data register.  The arbitration size is set to 4, which
+        // doesn't matter much since we're only running one uDMA transfer.
+        // If we were running multiple transfers through the uDMA engine, we
+        // would want to increase this enough to insure that the full LED
+        // strip worth of data goes out before the uDMA engine services
+        // another channel.
+        // TODO: see last sentence.
+        //
+        ROM_uDMAChannelControlSet(UDMA_CHANNEL_SSI1TX | UDMA_PRI_SELECT,
+                                  UDMA_SIZE_8 | UDMA_SRC_INC_8 |
+                                  UDMA_DST_INC_NONE | UDMA_ARB_8);
+    }
+
+    //
+    // Set up the transfer parameters for the uDMA SSI TX channel.  This will
+    // configure the transfer source and destination and the transfer size.
+    // Basic mode is used because the peripheral is making the uDMA transfer
+    // request.  The source is the TX buffer and the destination is the SSI
+    // data register.
+    //
+    ui16TransferSize = g_ui16SPIArraySize - g_ui16DMASent;
+    // Maximum transfer size is 1024, and attempts to transfer more may
+    // fail or ignore higher bits and transfer an unexpectedly small length.
+    if (ui16TransferSize > 1024) {
+        ui16TransferSize = 1024;
+    }
+    ROM_uDMAChannelTransferSet(UDMA_CHANNEL_SSI1TX | UDMA_PRI_SELECT,
+                               UDMA_MODE_BASIC, g_pui8SPIArray + g_ui16DMASent,
+                               (void *)(SSI1_BASE + SSI_O_DR),
+                               ui16TransferSize);
+    g_ui16DMASent += ui16TransferSize;
+}
 
 //*****************************************************************************
 //
@@ -49,7 +93,6 @@ void
 SSI1IntHandler(void)
 {
     unsigned long ulStatus;
-    static unsigned char ucPing = 0;
     static unsigned char ucZero = 0;
 
     //
@@ -76,23 +119,17 @@ SSI1IntHandler(void)
         //
         // Start another DMA transfer to UART0 TX.
         //
-        if(ucPing)
+        if(g_ui16DMASent < g_ui16SPIArraySize)
         {
-            ROM_uDMAChannelControlSet(UDMA_CHANNEL_SSI1TX | UDMA_PRI_SELECT,
-                                          UDMA_SIZE_8 | UDMA_SRC_INC_8 |
-                                          UDMA_DST_INC_NONE | UDMA_ARB_8);
-            ROM_uDMAChannelTransferSet(UDMA_CHANNEL_SSI1TX | UDMA_PRI_SELECT,
-                                   UDMA_MODE_BASIC, g_pui8SPIArray,
-                                   (void *)(SSI1_BASE + SSI_O_DR),
-                                   g_ui16SPIArraySize);
-            ucPing = 0;
+            uDMASendData();
+        }
+        else
+        {
             if(g_pui8DoneVar != NULL)
             {
                 *g_pui8DoneVar = 1;
             }
-        }
-        else
-        {
+
             //
             // Send out enough zero's to inform the LEDs that the previous
             // message is complete.  uDMA is a bit overkill for this... meh.
@@ -108,7 +145,8 @@ SSI1IntHandler(void)
             // causing colours to only be updated when the program gets
             // paused in Code Composer Studio.
             // Using 25, which meets SK6812 spec of 80 microseconds.
-            ucPing = 1;
+
+            g_ui16DMASent = 0;
         }
         //
         // The uDMA TX channel must be re-enabled.
@@ -235,34 +273,7 @@ InitSPITransfer(uint8_t *pui8SPIData, uint16_t ui16DataSize,
                                     UDMA_ATTR_HIGH_PRIORITY |
                                     UDMA_ATTR_REQMASK);
 
-    //
-    // Configure the control parameters for the SSI TX.  The uDMA SSI TX
-    // channel is used to transfer a block of data from a buffer to the periph.
-    // The data size is 8 bits.  The source address increment is 8-bit bytes
-    // since the data is coming from a uint8_t buffer.  The destination
-    // increment is none since the data is to be written to the SSI data
-    // register.  The arbitration size is set to 4, which doesn't matter much
-    // since we're only running one uDMA transfer.  If we were running multiple
-    // transfers through the uDMA engine, we would want to increase this enough
-    // to insure that the full LED strip worth of data goes out before the uDMA
-    // engine services another channel.
-    // TODO: see last sentence.
-    //
-    ROM_uDMAChannelControlSet(UDMA_CHANNEL_SSI1TX | UDMA_PRI_SELECT,
-                              UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE |
-                              UDMA_ARB_8);
-
-    //
-    // Set up the transfer parameters for the uDMA SSI TX channel.  This will
-    // configure the transfer source and destination and the transfer size.
-    // Basic mode is used because the peripheral is making the uDMA transfer
-    // request.  The source is the TX buffer and the destination is the SSI
-    // data register.
-    //
-    ROM_uDMAChannelTransferSet(UDMA_CHANNEL_SSI1TX | UDMA_PRI_SELECT,
-                               UDMA_MODE_BASIC, pui8SPIData,
-                               (void *)(SSI1_BASE + SSI_O_DR),
-                               ui16DataSize);
+    uDMASendData();
 
     *pui8DoneVar = 0;
 

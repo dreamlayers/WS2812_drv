@@ -21,6 +21,8 @@
 #include "SPI_uDMA_drv.h"
 #include "samplePatterns.h"
 
+#define NUM_LEDS 60
+
 //*****************************************************************************
 //
 // Configure the UART and its pins to A0 and A1, which are routed to the UART
@@ -74,7 +76,7 @@ main(void)
     // green, and blue intensity.  Note that these are actually stored GRB,
     // because WS2812b LEDs are weird.
     //
-    static uint8_t pui8Colors[30][3];
+    static uint8_t pui8Colors[NUM_LEDS][3];
 
     //
     // The output array for the SPI bus.  The nature of the timing for the LEDs
@@ -85,8 +87,8 @@ main(void)
     // "100" is a 0.  We use some macros to figure out how many bytes of SPI
     // array we need to represent each of the 30 LEDs.
     //
-    static uint8_t pui8SPIOut[30][WS2812_SPI_BYTE_PER_CLR * 
-                                  WS2812_SPI_BIT_WIDTH];
+    static uint8_t pui8SPIOut[NUM_LEDS][WS2812_SPI_BYTE_PER_CLR *
+                                        WS2812_SPI_BIT_WIDTH];
 
     //
     // We'll pass this flag to the uDMA library, which will tell us when each
@@ -117,7 +119,7 @@ main(void)
     //
     // Initialize the color array to be evenly spaced along the color wheel.
     //
-    rainbowInit(pui8Colors, 30);
+    rainbowInit(pui8Colors, NUM_LEDS);
 
     //
     // Initialize and start the inifinite uDMA transfers
@@ -132,7 +134,7 @@ main(void)
         if(ui8SPIDone)
         {
             ui8SPIDone = 0;
-            for(i=0;i<30;i++)
+            for(i=0;i<NUM_LEDS;i++)
             {
                 //
                 // Update the RGB colors to the next value in the color wheel
