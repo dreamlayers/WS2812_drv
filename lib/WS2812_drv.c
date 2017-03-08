@@ -17,12 +17,11 @@
 void
 WStoSPI(uint8_t *pi8SPIData, uint8_t ui8Color)
 {
-    int i;
-
 #if WS2812_SPI_BIT_WIDTH == 8
     //
     //8-bit implementation
     //
+    int i;
     for(i=0;i<8;i++)
     {
         if(ui8Color & (0x80 >> i))
@@ -38,31 +37,17 @@ WStoSPI(uint8_t *pi8SPIData, uint8_t ui8Color)
     //
     //4-bit implementation
     //
-    for(i=0;i<8;i++)
-    {
-        if(ui8Color & (0x80 >> i))
-        {
-            if(i&0x01)
-            {
-                pi8SPIData[i/2] |= WS2812_SPI_HIGH;
-            }
-            else
-            {
-                pi8SPIData[i/2] = (WS2812_SPI_HIGH << 4);
-            }
-        }
-        else
-        {
-            if(i&0x01)
-            {
-                pi8SPIData[i/2] |= WS2812_SPI_LOW;
-            }
-            else
-            {
-                pi8SPIData[i/2] = (WS2812_SPI_LOW << 4);
-            }
-        }
-    }
+    uint8_t mask = 0x80;
+    volatile uint8_t *dest = (volatile uint8_t *)pi8SPIData;
+    do {
+        uint8_t val;
+        val = (ui8Color & mask) ? (WS2812_SPI_HIGH << 4) :
+                                    WS2812_SPI_LOW << 4;
+        mask >>= 1;
+        val |= (ui8Color & mask) ? WS2812_SPI_HIGH : WS2812_SPI_LOW;
+        mask >>= 1;
+        *(dest++) = val;
+    } while (mask != 0);
 #else
 #error Unsupported WS2812_SPI_BIT_WIDTH
 #endif
